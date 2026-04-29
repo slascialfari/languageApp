@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Listening Trainer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f2f4f7;
+      min-height: 100vh;
+      color: #1a1a2e;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 32px 16px 60px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    header h1 {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    header p {
+      color: #888;
+      font-size: 14px;
+      margin-top: 6px;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+    }
+
+    /* ── Control groups ── */
+    .control-group { margin-bottom: 16px; }
+    .control-group:last-child { margin-bottom: 0; }
+    .control-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #aaa;
+      margin-bottom: 8px;
+    }
+
+    /* ── Pills / toggle buttons ── */
+    .pill-row { display: flex; flex-wrap: wrap; gap: 7px; }
+    .pill {
+      padding: 7px 15px;
+      border-radius: 20px;
+      border: 1.5px solid #e2e5ea;
+      background: #fff;
+      font-size: 13.5px;
+      color: #555;
+      cursor: pointer;
+      transition: border-color 0.13s, background 0.13s, color 0.13s;
+      user-select: none;
+    }
+    .pill:hover { border-color: #4a8fe8; color: #4a8fe8; }
+    .pill.active {
+      background: #4a8fe8;
+      border-color: #4a8fe8;
+      color: #fff;
+      font-weight: 600;
+    }
+
+    /* ── Generate button ── */
+    .generate-btn {
+      width: 100%;
+      padding: 13px;
+      background: #4a8fe8;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+      letter-spacing: 0.2px;
+    }
+    .generate-btn:hover:not(:disabled) { background: #3579d4; }
+    .generate-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    /* ── Loading spinner ── */
+    .loading-row {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px 0 4px;
+      color: #888;
+      font-size: 14px;
+    }
+    .loading-row.show { display: flex; }
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2.5px solid #dde;
+      border-top-color: #4a8fe8;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Error card ── */
+    .error-card {
+      display: none;
+      background: #fff6f6;
+      border: 1.5px solid #f5c0c0;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      color: #c0392b;
+      font-size: 13.5px;
+      line-height: 1.6;
+    }
+    .error-card.show { display: block; }
+    .error-card strong { display: block; margin-bottom: 4px; }
+
+    /* ── Topic header ── */
+    .topic-label {
+      font-size: 13px;
+      color: #aaa;
+      font-style: italic;
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    /* ── Chat bubbles ── */
+    .exchanges { display: flex; flex-direction: column; gap: 20px; margin-bottom: 20px; }
+
+    .exchange { display: flex; flex-direction: column; gap: 8px; }
+
+    .exchange-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .exchange.b .exchange-row { flex-direction: row-reverse; }
+
+    .avatar {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800;
+      font-size: 13px;
+      color: #fff;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .avatar.a { background: #4a8fe8; }
+    .avatar.b { background: #43b37a; }
+
+    .bubble-wrap { flex: 1; min-width: 0; }
+
+    /* ── Comic panel images ── */
+    .panel-img-wrap {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #e8ecf0;
+      position: relative;
+    }
+
+    .panel-skeleton {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, #e8ecf0 25%, #d4dbe4 50%, #e8ecf0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s ease-in-out infinite;
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .panel-img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity 0.5s;
+      position: relative;
+    }
+    .panel-img.ready { opacity: 1; }
+
+    .bubble {
+      display: inline-block;
+      padding: 9px 14px;
+      font-size: 14.5px;
+      line-height: 1.55;
+      transition: box-shadow 0.18s, background 0.18s;
+    }
+    .exchange.a .bubble {
+      background: #eaf3fd;
+      border-radius: 3px 12px 12px 12px;
+    }
+    .exchange.b .bubble {
+      background: #e8f7ef;
+      border-radius: 12px 3px 12px 12px;
+    }
+
+    /* Speaking highlight */
+    .exchange.speaking.a .bubble {
+      background: #cde5fa;
+      box-shadow: 0 0 0 2px #4a8fe8;
+    }
+    .exchange.speaking.b .bubble {
+      background: #c5edda;
+      box-shadow: 0 0 0 2px #43b37a;
+    }
+
+    /* Translation */
+    .translation {
+      font-size: 12px;
+      color: #999;
+      margin-top: 5px;
+      padding: 0 3px;
+      display: none;
+      line-height: 1.4;
+    }
+    .show-transcript .translation { display: block; }
+
+    /* ── Playback controls ── */
+    .playback-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding-bottom: 16px;
+      margin-bottom: 4px;
+      border-bottom: 1px solid #f2f2f2;
+    }
+
+    .play-btn {
+      padding: 8px 18px;
+      background: #4a8fe8;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+      min-width: 84px;
+    }
+    .play-btn:hover { background: #3579d4; }
+    .play-btn.stop { background: #e05555; }
+    .play-btn.stop:hover { background: #c94040; }
+
+    .transcript-btn {
+      padding: 8px 14px;
+      background: #fff;
+      border: 1.5px solid #e2e5ea;
+      border-radius: 8px;
+      font-size: 13.5px;
+      cursor: pointer;
+      color: #555;
+      transition: all 0.13s;
+      font-weight: 500;
+    }
+    .transcript-btn:hover { border-color: #4a8fe8; color: #4a8fe8; }
+    .transcript-btn.active { background: #4a8fe8; border-color: #4a8fe8; color: #fff; }
+
+    .speed-group { display: flex; gap: 4px; margin-left: auto; }
+    .speed-btn {
+      padding: 7px 11px;
+      background: #fff;
+      border: 1.5px solid #e2e5ea;
+      border-radius: 7px;
+      font-size: 12.5px;
+      cursor: pointer;
+      color: #666;
+      font-weight: 500;
+      transition: all 0.13s;
+    }
+    .speed-btn:hover { border-color: #4a8fe8; color: #4a8fe8; }
+    .speed-btn.active { background: #4a8fe8; border-color: #4a8fe8; color: #fff; }
+
+    /* ── Replay button ── */
+    .replay-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      border: 1.5px solid #e0e3ea;
+      background: #fff;
+      color: #bbb;
+      font-size: 13px;
+      cursor: pointer;
+      margin-top: 5px;
+      padding: 0;
+      transition: border-color 0.13s, color 0.13s, background 0.13s;
+      line-height: 1;
+    }
+    .replay-btn:hover:not(:disabled) { border-color: #4a8fe8; color: #4a8fe8; background: #f0f6ff; }
+    .replay-btn:disabled { opacity: 0.25; cursor: default; }
+
+    /* ── Vocabulary ── */
+    .vocab-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #aaa;
+      margin-bottom: 12px;
+    }
+    .vocab-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .vocab-chip {
+      padding: 6px 13px;
+      background: #f5eeff;
+      border: 1px solid #e4d0f8;
+      border-radius: 20px;
+      font-size: 13px;
+      color: #7340b8;
+      line-height: 1.4;
+    }
+
+    /* ── Clickable bubbles ── */
+    .bubble {
+      cursor: pointer;
+    }
+    .bubble:hover {
+      filter: brightness(0.96);
+    }
+
+    /* ── Breakdown panel ── */
+    .breakdown {
+      display: none;
+      margin-top: 8px;
+      padding: 10px 13px;
+      background: #f8f9fb;
+      border: 1px solid #e4e7ed;
+      border-radius: 10px;
+      font-size: 13px;
+    }
+    .breakdown.open { display: block; }
+
+    .bd-loading {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: #aaa;
+    }
+    .bd-loading .spinner { width: 13px; height: 13px; border-width: 2px; }
+
+    .bd-translation {
+      color: #666;
+      font-style: italic;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #ebebeb;
+      line-height: 1.45;
+    }
+
+    .bd-words { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .word-chip {
+      background: #fff;
+      border: 1px solid #e0e3ea;
+      border-radius: 8px;
+      padding: 6px 10px;
+      text-align: center;
+      min-width: 50px;
+    }
+    .word-chip .w-orig { display: block; font-weight: 700; font-size: 14px; color: #1a1a2e; }
+    .word-chip .w-mean { display: block; font-size: 12px; color: #4a8fe8; margin: 2px 0 1px; }
+    .word-chip .w-role { display: block; font-size: 10.5px; color: #bbb; font-style: italic; }
+
+    /* ── Audio status ── */
+    .audio-status {
+      font-size: 12.5px;
+      color: #888;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+    .audio-status:empty { display: none; }
+    .audio-status .spinner {
+      width: 13px; height: 13px;
+      border-width: 2px;
+      flex-shrink: 0;
+    }
+
+    /* ── Hidden utility ── */
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>Listening Trainer</h1>
+    <p>Generate dialogues, listen, and learn</p>
+  </header>
+
+  <!-- Controls -->
+  <div class="card">
+    <div class="control-group">
+      <div class="control-label">Language</div>
+      <div class="pill-row" id="lang-row">
+        <button class="pill active" data-lang="Dutch">Dutch</button>
+        <button class="pill" data-lang="Italian">Italian</button>
+        <button class="pill" data-lang="French">French</button>
+        <button class="pill" data-lang="Spanish">Spanish</button>
+      </div>
+    </div>
+    <div class="control-group">
+      <div class="control-label">Level</div>
+      <div class="pill-row" id="level-row">
+        <button class="pill active" data-level="A1">A1 Beginner</button>
+        <button class="pill" data-level="A2">A2 Elementary</button>
+        <button class="pill" data-level="B1">B1 Intermediate</button>
+      </div>
+    </div>
+    <div class="control-group">
+      <button class="generate-btn" id="generate-btn">Generate Dialogue</button>
+      <div class="loading-row" id="loading">
+        <div class="spinner"></div>
+        Generating dialogue…
+      </div>
+    </div>
+  </div>
+
+  <!-- Error display -->
+  <div class="error-card" id="error-card"></div>
+
+  <!-- Dialogue card -->
+  <div class="card hidden" id="dialogue-card">
+    <div class="topic-label" id="topic-label"></div>
+    <div class="playback-row">
+      <button class="play-btn" id="play-btn">▶ Play</button>
+      <span class="audio-status" id="audio-status"></span>
+      <button class="transcript-btn" id="transcript-btn">Show Transcript</button>
+      <div class="speed-group" id="speed-group">
+        <button class="speed-btn" data-speed="0.7">Slow</button>
+        <button class="speed-btn active" data-speed="1.0">Normal</button>
+        <button class="speed-btn" data-speed="1.4">Fast</button>
+      </div>
+    </div>
+    <div class="exchanges" id="exchanges"></div>
+  </div>
+
+  <!-- Vocabulary card -->
+  <div class="card hidden" id="vocab-card">
+    <div class="vocab-title">Key Vocabulary</div>
+    <div class="vocab-chips" id="vocab-chips"></div>
+  </div>
+
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+  const state = {
+    language: 'Dutch',
+    level: 'A1',
+    speed: 1.0,
+    dialogue: null,
+    playing: false,
+    showTranscript: false,
+    stopRequested: false,
+  };
+
+  let breakdownCache = {};
+
+  const LANGS = {
+    Dutch:   { ttsCode: 'nl' },
+    Italian: { ttsCode: 'it' },
+    French:  { ttsCode: 'fr' },
+    Spanish: { ttsCode: 'es' },
+  };
+
+  // ElevenLabs premade voices by gender
+  const VOICE_POOL = {
+    female: [
+      '21m00Tcm4TlvDq8ikWAM', // Rachel
+      'AZnzlk1XvdvUeBnXmlld', // Domi
+      'EXAVITQu4vr4xnSDxMaL', // Bella
+      'MF3mGyEYCl7XYWbV9V6O', // Elli
+    ],
+    male: [
+      'pNInz6obpgDQGcFmaJgB', // Adam
+      'ErXwobaYiN019PkySvjV', // Antoni
+      'TxGEqnHWrfWFTfGW9XjX', // Josh
+      'VR6AewLTigWG4xSOukaG', // Arnold
+      'yoZ06aMxZJJ28mfd3POQ', // Sam
+    ],
+  };
+
+  let selectedVoices = { A: VOICE_POOL.female[0], B: VOICE_POOL.male[0] };
+
+  function assignVoices(characters) {
+    const genderOf = c => ((c?.gender || '').toLowerCase().startsWith('m') ? 'male' : 'female');
+    const gA = genderOf(characters?.A);
+    const gB = genderOf(characters?.B);
+    const pickFrom = (pool, exclude) => {
+      const opts = exclude ? pool.filter(v => v !== exclude) : pool;
+      return opts[Math.floor(Math.random() * opts.length)] ?? pool[0];
+    };
+    const vA = pickFrom(VOICE_POOL[gA]);
+    const vB = pickFrom(VOICE_POOL[gB], gA === gB ? vA : null);
+    selectedVoices = { A: vA, B: vB };
+  }
+
+  const LEVEL_NAMES = { A1: 'beginner', A2: 'elementary', B1: 'intermediate' };
+
+  // ── DOM refs ───────────────────────────────────────────────────────────────
+  const generateBtn   = document.getElementById('generate-btn');
+  const loading       = document.getElementById('loading');
+  const errorCard     = document.getElementById('error-card');
+  const dialogueCard  = document.getElementById('dialogue-card');
+  const vocabCard     = document.getElementById('vocab-card');
+  const topicLabel    = document.getElementById('topic-label');
+  const exchangesEl   = document.getElementById('exchanges');
+  const playBtn       = document.getElementById('play-btn');
+  const transcriptBtn = document.getElementById('transcript-btn');
+  const vocabChips    = document.getElementById('vocab-chips');
+
+  // ── Pill listeners ─────────────────────────────────────────────────────────
+  document.getElementById('lang-row').addEventListener('click', e => {
+    const btn = e.target.closest('.pill');
+    if (!btn) return;
+    document.querySelectorAll('#lang-row .pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    state.language = btn.dataset.lang;
+  });
+
+  document.getElementById('level-row').addEventListener('click', e => {
+    const btn = e.target.closest('.pill');
+    if (!btn) return;
+    document.querySelectorAll('#level-row .pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    state.level = btn.dataset.level;
+  });
+
+  document.getElementById('speed-group').addEventListener('click', e => {
+    const btn = e.target.closest('.speed-btn');
+    if (!btn) return;
+    document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.speed = parseFloat(btn.dataset.speed);
+  });
+
+  // ── Topic pool ─────────────────────────────────────────────────────────────
+  const TOPICS = [
+    'Two old friends bumping into each other on the street after years apart',
+    'A couple having a small argument about being late to a dinner',
+    'Two colleagues complaining about their boss over coffee',
+    'Friends debating which city to visit for a long weekend',
+    'Two neighbours discussing a loud party the night before',
+    'A parent trying to convince a teenager to study instead of going out',
+    'Two friends reacting to a shocking piece of celebrity gossip',
+    'A couple trying to agree on a name for their new puppy',
+    'Two students panicking the night before a big exam',
+    'Friends arguing over who was right in an old disagreement',
+    'Two locals discussing whether a popular new shop is actually good',
+    'A couple planning a surprise birthday party for a mutual friend',
+    'Two people stuck in traffic complaining about the commute',
+    'Friends excitedly planning a group holiday for the summer',
+    'Two coworkers discussing an awkward moment at the office party',
+    'A person convincing a friend to try a new sport or hobby',
+    'Two friends debating whether a film they saw was good or overrated',
+    'A couple disagreeing about how to spend a lazy Sunday',
+    'Two people in a waiting room making small talk that turns interesting',
+    'Friends deciding last-minute what to do on a Friday evening',
+    'Two locals debating whether the neighbourhood is changing for better or worse',
+    'A person venting to a friend about a frustrating family situation',
+    'Two friends laughing about an embarrassing memory from years ago',
+    'A couple discussing moving in together or making a big life change',
+    'Two friends comparing notes after a first date',
+    'Two people at a market haggling or debating a purchase',
+    'Friends talking about a mutual friend who is going through a tough time',
+    'Two colleagues excited about an upcoming work trip',
+    'A person asking a friend for honest advice about a difficult decision',
+    'Two people reconnecting and catching up on everything that has changed',
+  ];
+
+  function pickTopic() {
+    return TOPICS[Math.floor(Math.random() * TOPICS.length)];
+  }
+
+  // ── Generate ───────────────────────────────────────────────────────────────
+  generateBtn.addEventListener('click', generate);
+
+  async function generate() {
+    stopPlayback();
+    hideError();
+    setLoading(true);
+
+    const lang      = LANGS[state.language];
+    const levelName = LEVEL_NAMES[state.level];
+    const scenario  = pickTopic();
+
+    const prompt = `You are simulating a natural, spontaneous conversation that a language learner might overhear as a tourist in a ${state.language}-speaking country.
+
+Scenario: ${scenario}
+
+Generate the dialogue in ${state.language} at CEFR ${state.level} (${levelName}) level. Return ONLY a valid JSON object — no markdown, no code fences, no explanation:
+{
+  "topic": "one punchy English sentence describing what the conversation is about",
+  "characters": {
+    "A": { "gender": "female OR male", "visual": "very specific: age, distinctive hair colour and style, skin tone, exact clothing — e.g. woman in her late 20s, long straight black hair, olive skin, red puffer jacket and white scarf" },
+    "B": { "gender": "female OR male", "visual": "very specific: age, distinctive hair colour and style, skin tone, exact clothing — e.g. man in his 50s, bald with grey stubble, pale skin, dark green coat and glasses" }
+  },
+  "exchanges": [
+    { "speaker": "A", "target": "sentence in ${state.language}", "english": "English translation", "scene": "one sentence: what is visually happening in this moment — action, expression, setting" },
+    { "speaker": "B", "target": "sentence in ${state.language}", "english": "English translation", "scene": "one sentence: what is visually happening in this moment" }
+  ],
+  "vocabulary": [
+    "word – meaning"
+  ]
+}
+
+Requirements:
+- 6 to 10 exchanges, alternating A and B
+- Vocabulary and grammar strictly at ${state.level} ${levelName} level
+- Sound like a real conversation — natural, a little messy, not textbook-stiff
+- 4 to 6 key vocabulary items worth noting
+- All target-language text must be in ${state.language} (language code: ${lang.ttsCode})
+- Scene descriptions should be vivid but concise, no mention of text or speech bubbles`;
+
+    try {
+      const res = await fetch('http://localhost:3737/api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 2500,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(`API error ${res.status}: ${err.error?.message || res.statusText}`);
+      }
+
+      const data = await res.json();
+      const raw  = data.content?.[0]?.text ?? '';
+      const dialogue = parseDialogueJSON(raw);
+
+      state.dialogue = dialogue;
+      renderDialogue(dialogue);
+
+    } catch (err) {
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        showError(
+          '<strong>Cannot reach the proxy server.</strong>' +
+          'Make sure you have started it first:<br>' +
+          '<code style="background:#fde8e8;padding:2px 6px;border-radius:4px;font-size:12px">node proxy.js</code><br><br>' +
+          'Then reload this page and try again.'
+        );
+      } else {
+        showError('<strong>Error generating dialogue.</strong>' + err.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function parseDialogueJSON(raw) {
+    let text = raw.trim();
+    // Strip markdown code fences if Claude adds them despite instructions
+    text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+    return JSON.parse(text);
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+  function renderDialogue(d) {
+    topicLabel.textContent = '📍 ' + d.topic;
+    exchangesEl.innerHTML = '';
+    breakdownCache = {};
+    clearAudioCache();
+
+    d.exchanges.forEach((ex, i) => {
+      const isB     = ex.speaker === 'B';
+      const wrapper = document.createElement('div');
+      wrapper.className = `exchange ${isB ? 'b' : 'a'}`;
+      wrapper.dataset.index = i;
+
+      wrapper.innerHTML = `
+        <div class="panel-img-wrap" id="img-wrap-${i}">
+          <div class="panel-skeleton"></div>
+          <img class="panel-img" id="panel-img-${i}" alt="" />
+        </div>
+        <div class="exchange-row">
+          <div class="avatar ${isB ? 'b' : 'a'}">${ex.speaker}</div>
+          <div class="bubble-wrap">
+            <div class="bubble" data-index="${i}" title="Click to analyse">${escHtml(ex.target)}</div>
+            <button class="replay-btn" data-index="${i}" disabled title="Replay this line">↺</button>
+            <div class="translation">${escHtml(ex.english)}</div>
+            <div class="breakdown" id="breakdown-${i}"></div>
+          </div>
+        </div>`;
+
+      exchangesEl.appendChild(wrapper);
+    });
+
+    // Vocabulary
+    vocabChips.innerHTML = '';
+    (d.vocabulary || []).forEach(v => {
+      const chip = document.createElement('span');
+      chip.className = 'vocab-chip';
+      chip.textContent = v;
+      vocabChips.appendChild(chip);
+    });
+
+    assignVoices(d.characters);
+
+    dialogueCard.classList.remove('hidden');
+    vocabCard.classList.remove('hidden');
+    applyTranscriptState();
+
+    const seed = Math.floor(Math.random() * 2_000_000_000);
+    preGenerateAudio();
+    preGenerateImages(seed);
+  }
+
+  // ── Bubble click → breakdown / replay ────────────────────────────────────
+  exchangesEl.addEventListener('click', e => {
+    const replay = e.target.closest('.replay-btn');
+    if (replay) {
+      const index = parseInt(replay.dataset.index, 10);
+      if (!isNaN(index)) playLine(index);
+      return;
+    }
+    const bubble = e.target.closest('.bubble');
+    if (!bubble) return;
+    const index = parseInt(bubble.dataset.index, 10);
+    if (!isNaN(index)) handleBubbleClick(index);
+  });
+
+  async function playLine(index) {
+    if (!audioCache[index]) return;
+    if (state.playing) stopPlayback();
+    if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+    highlightBubble(index);
+    await playAudioUrl(audioCache[index]);
+    clearHighlight();
+  }
+
+  function handleBubbleClick(index) {
+    const panel = document.getElementById(`breakdown-${index}`);
+    if (!panel) return;
+
+    // Already fetched — just toggle visibility
+    if (breakdownCache[index]) {
+      panel.classList.toggle('open');
+      return;
+    }
+
+    // First open: fetch
+    panel.classList.add('open');
+    const ex = state.dialogue.exchanges[index];
+    fetchBreakdown(index, ex.target, ex.english, panel);
+  }
+
+  async function fetchBreakdown(index, sentence, english, panel) {
+    panel.innerHTML = '<div class="bd-loading"><div class="spinner"></div>Analysing…</div>';
+
+    const prompt = `Break down this ${state.language} sentence word by word for a language learner.
+
+Sentence: "${sentence}"
+English: "${english}"
+
+Return ONLY valid JSON, no markdown:
+{
+  "words": [
+    { "word": "exact word as written", "meaning": "English meaning in this context", "role": "grammatical role" }
+  ]
+}
+
+For "role" use short plain labels: subject pronoun, verb (present), auxiliary verb, definite article, indefinite article, noun, preposition, adjective, adverb, conjunction, negation, object pronoun, possessive, etc.
+Include every token including contractions and particles. Do not skip short words.`;
+
+    try {
+      const res = await fetch('http://localhost:3737/api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 700,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      });
+      if (!res.ok) throw new Error(`API error ${res.status}`);
+
+      const data = await res.json();
+      const raw  = data.content?.[0]?.text ?? '';
+      let text   = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+      const parsed = JSON.parse(text);
+
+      breakdownCache[index] = parsed.words;
+      renderBreakdown(panel, english, parsed.words);
+
+    } catch (err) {
+      panel.innerHTML = `<span style="color:#c0392b;font-size:13px">Could not load: ${escHtml(err.message)}</span>`;
+    }
+  }
+
+  function renderBreakdown(panel, english, words) {
+    const chips = words.map(w => `
+      <div class="word-chip">
+        <span class="w-orig">${escHtml(w.word)}</span>
+        <span class="w-mean">${escHtml(w.meaning)}</span>
+        <span class="w-role">${escHtml(w.role)}</span>
+      </div>`).join('');
+
+    panel.innerHTML = `
+      <div class="bd-translation">${escHtml(english)}</div>
+      <div class="bd-words">${chips}</div>`;
+  }
+
+  // ── Transcript toggle ──────────────────────────────────────────────────────
+  transcriptBtn.addEventListener('click', () => {
+    state.showTranscript = !state.showTranscript;
+    transcriptBtn.textContent = state.showTranscript ? 'Hide Transcript' : 'Show Transcript';
+    transcriptBtn.classList.toggle('active', state.showTranscript);
+    applyTranscriptState();
+  });
+
+  function applyTranscriptState() {
+    exchangesEl.classList.toggle('show-transcript', state.showTranscript);
+  }
+
+  // ── Audio pre-generation ───────────────────────────────────────────────────
+  let audioCache       = [];   // blob URLs, one per exchange
+  let preGenController = null;
+  let preImgController = null;
+
+  function clearAudioCache() {
+    if (preGenController) { preGenController.abort(); preGenController = null; }
+    if (preImgController) { preImgController.abort(); preImgController = null; }
+    audioCache.forEach(url => { if (url) URL.revokeObjectURL(url); });
+    audioCache = [];
+  }
+
+  async function preGenerateAudio() {
+    if (preGenController) { preGenController.abort(); }
+    preGenController = new AbortController();
+    const { signal } = preGenController;
+
+    const exchanges = state.dialogue.exchanges;
+    audioCache      = new Array(exchanges.length).fill(null);
+    const langCode  = LANGS[state.language].ttsCode;
+    const total     = exchanges.length;
+    let done        = 0;
+
+    playBtn.disabled    = true;
+    playBtn.textContent = `Preparing 0 / ${total}…`;
+
+    try {
+      for (let i = 0; i < exchanges.length; i++) {
+        if (signal.aborted) return;
+
+        const ex  = exchanges[i];
+        const res = await fetch('http://localhost:3737/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: ex.target, voiceId: selectedVoices[ex.speaker], languageCode: langCode }),
+          signal,
+        });
+
+        if (!res.ok) throw new Error(`TTS ${res.status}`);
+        const blob = await res.blob();
+        if (signal.aborted) return;
+
+        audioCache[i] = URL.createObjectURL(blob);
+        done++;
+        playBtn.textContent = `Preparing ${done} / ${total}…`;
+      }
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      playBtn.disabled    = true;
+      playBtn.textContent = '▶ Play';
+      if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
+        showError('<strong>Cannot reach the proxy server.</strong> Make sure <code>node proxy.js</code> is running.');
+      } else {
+        showError('<strong>Audio pre-generation failed.</strong> ' + err.message);
+      }
+      return;
+    }
+
+    if (signal.aborted) return;
+    preGenController    = null;
+    playBtn.disabled    = false;
+    playBtn.textContent = '▶ Play';
+    document.querySelectorAll('.replay-btn').forEach(b => b.disabled = false);
+  }
+
+  // ── Image pre-generation ──────────────────────────────────────────────────
+  function buildImagePrompt(scene, characters) {
+    const vA = characters?.A?.visual || 'a person';
+    const vB = characters?.B?.visual || 'another person';
+    const gA = characters?.A?.gender || 'person';
+    const gB = characters?.B?.gender || 'person';
+    // Repeat the full descriptions every prompt so FLUX doesn't drift
+    return `Comic strip panel illustration. Absolutely no text, no speech bubbles, no captions, no signs, no writing of any kind anywhere. ` +
+      `Scene: ${scene}. ` +
+      `Character A is a ${gA}: ${vA}. ` +
+      `Character B is a ${gB}: ${vB}. ` +
+      `Keep character appearances exactly consistent with these descriptions. ` +
+      `Colorful flat illustration style, simple background, warm lighting.`;
+  }
+
+  async function preGenerateImages(seed) {
+    if (preImgController) preImgController.abort();
+    preImgController = new AbortController();
+    const { signal } = preImgController;
+
+    const { exchanges, characters = {} } = state.dialogue;
+
+    const tasks = exchanges.map(async (ex, i) => {
+      if (signal.aborted) return;
+      try {
+        const res = await fetch('http://localhost:3737/image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: buildImagePrompt(ex.scene || ex.english, characters), seed }),
+          signal,
+        });
+        if (!res.ok) {
+          const errText = await res.text().catch(() => '');
+          console.warn(`Image ${i}: HTTP ${res.status}`, errText);
+          return;
+        }
+
+        const data = await res.json();
+        const url  = data.images?.[0]?.url;
+        if (!url || signal.aborted) return;
+
+        const img  = document.getElementById(`panel-img-${i}`);
+        const wrap = document.getElementById(`img-wrap-${i}`);
+        if (!img || !wrap) return;
+
+        img.onload = () => {
+          img.classList.add('ready');
+          wrap.querySelector('.panel-skeleton')?.remove();
+        };
+        img.src = url;
+
+      } catch (err) {
+        if (err.name === 'AbortError') return;
+        console.warn(`Image ${i}:`, err.message);
+      }
+    });
+
+    await Promise.all(tasks);
+    if (!signal.aborted) preImgController = null;
+  }
+
+  // ── Playback ───────────────────────────────────────────────────────────────
+  let currentAudio = null;
+
+  playBtn.addEventListener('click', () => {
+    if (state.playing) stopPlayback();
+    else startPlayback();
+  });
+
+  async function startPlayback() {
+    if (!state.dialogue || audioCache.some(u => !u)) return;
+
+    state.playing       = true;
+    state.stopRequested = false;
+    playBtn.textContent = '■ Stop';
+    playBtn.classList.add('stop');
+    hideError();
+
+    for (let i = 0; i < state.dialogue.exchanges.length; i++) {
+      if (state.stopRequested) break;
+      highlightBubble(i);
+      await playAudioUrl(audioCache[i]);
+    }
+
+    clearHighlight();
+    state.playing       = false;
+    playBtn.textContent = '▶ Play';
+    playBtn.classList.remove('stop');
+  }
+
+  function stopPlayback() {
+    state.stopRequested = true;
+    if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+    state.playing       = false;
+    playBtn.textContent = '▶ Play';
+    playBtn.classList.remove('stop');
+    clearHighlight();
+  }
+
+  function playAudioUrl(url) {
+    return new Promise(resolve => {
+      currentAudio              = new Audio(url);
+      currentAudio.playbackRate = state.speed;
+      currentAudio.onended      = () => { currentAudio = null; resolve(); };
+      currentAudio.onerror      = () => { currentAudio = null; resolve(); };
+      currentAudio.play();
+    });
+  }
+
+  // ── Highlight helpers ──────────────────────────────────────────────────────
+  function highlightBubble(index) {
+    clearHighlight();
+    const el = exchangesEl.querySelector(`[data-index="${index}"]`);
+    if (el) {
+      el.classList.add('speaking');
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  function clearHighlight() {
+    exchangesEl.querySelectorAll('.speaking').forEach(el => el.classList.remove('speaking'));
+  }
+
+  // ── UI helpers ─────────────────────────────────────────────────────────────
+  function setLoading(on) {
+    generateBtn.disabled = on;
+    loading.classList.toggle('show', on);
+  }
+
+  function showError(html) {
+    errorCard.innerHTML = html;
+    errorCard.classList.add('show');
+  }
+
+  function hideError() {
+    errorCard.classList.remove('show');
+  }
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+</script>
+</body>
+</html>
